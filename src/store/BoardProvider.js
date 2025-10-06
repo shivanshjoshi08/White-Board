@@ -158,7 +158,7 @@ const BoardProvider = ({ children }) => {
 
   const fetchDrawings = useCallback(async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/drawings");
+      const response = await axios.get("https://white-board-2kl6.onrender.com");
       setDrawings(response.data);
     } catch (error) {
       console.error("Error fetching drawings:", error);

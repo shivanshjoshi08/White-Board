@@ -30,3 +30,37 @@
     @apply bg-blue-300 text-gray-800;
     transform: scale(1.1);
 }
+
+/* Tooltip CSS */
+
+.toolItem {
+  position: relative; /* Yeh zaroori hai tooltip ko position karne ke liye */
+  cursor: pointer;
+}
+
+/* Tooltip ka style */
+.toolItem::after {
+  content: attr(data-tooltip); /* Yahan se tooltip ka text aayega */
+  position: absolute;
+  bottom: -30px; /* Icon ke 30px neeche */
+  left: 50%;
+  transform: translateX(-50%); /* Tooltip ko center me rakhega */
+  
+  background-color: #333;
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap; /* Text ko ek line me rakhega */
+  
+  opacity: 0; /* Shuru me chupa hua rahega */
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s; /* Dheere se aane ka effect */
+  z-index: 10;
+}
+
+/* Jab toolItem par hover ho, to tooltip ko dikhao */
+.toolItem:hover::after {
+  opacity: 1;
+  visibility: visible;
+}

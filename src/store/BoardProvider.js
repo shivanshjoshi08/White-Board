@@ -1,14 +1,18 @@
-import React, { useCallback, useReducer } from "react";
+// src/store/BoardProvider.js
+
+import React, { useCallback, useReducer, useState, useEffect } from "react";
 import boardContext from "./board-context";
 import { BOARD_ACTIONS, TOOL_ACTION_TYPES, TOOL_ITEMS } from "../constants";
-import { createElement, getSvgPathFromStroke } from "../utils/element";
+import {
+  createElement,
+  getSvgPathFromStroke,
+  isPointNearElement,
+} from "../utils/element";
 import getStroke from "perfect-freehand";
-import { isPointNearElement } from "../utils/element";
-import axios from "axios"; // NEW: axios ko import karein
+import axios from "axios";
 
+// ... boardReducer (No changes needed here)
 const boardReducer = (state, action) => {
-  // ...aapka poora reducer code waisa hi rahega, usme koi change nahi...
-  // [No changes needed in the reducer function]
   switch (action.type) {
     case BOARD_ACTIONS.CHANGE_TOOL:
       return {
@@ -30,17 +34,14 @@ const boardReducer = (state, action) => {
         clientY,
         { type: state.activeToolItem, stroke, fill, size }
       );
-
-      const prevElements = state.elements;
       return {
         ...state,
         toolActionType:
           state.activeToolItem === TOOL_ITEMS.TEXT
             ? TOOL_ACTION_TYPES.WRITING
             : TOOL_ACTION_TYPES.DRAWING,
-        elements: [...prevElements, newElement],
+        elements: [...state.elements, newElement],
       };
-
     case BOARD_ACTIONS.DRAW_MOVE:
       const { clientX: moveX, clientY: moveY } = action.payload;
       const newElements = [...state.elements];
@@ -89,17 +90,15 @@ const boardReducer = (state, action) => {
         history: newHistory,
         index: state.index + 1,
       };
-
     case BOARD_ACTIONS.ERASE:
       const { clientX: eraseX, clientY: eraseY } = action.payload;
-      let erasedElements = state.elements.filter(
-        (element) => !isPointNearElement(element, eraseX, eraseY)
+      const erasedElements = state.elements.filter((element) =>
+        !isPointNearElement(element, eraseX, eraseY)
       );
       return {
         ...state,
         elements: erasedElements,
       };
-
     case BOARD_ACTIONS.CHANGE_TEXT:
       const textIndex = state.elements.length - 1;
       const updatedElements = [...state.elements];
@@ -115,28 +114,33 @@ const boardReducer = (state, action) => {
         history: updatedHistory,
         index: state.index + 1,
       };
-
     case BOARD_ACTIONS.REDO:
       if (state.index >= state.history.length - 1) return state;
       return {
         ...state,
-        elements: [...state.history[state.index + 1]], // Deep copy
+        elements: [...state.history[state.index + 1]],
         index: state.index + 1,
       };
-
     case BOARD_ACTIONS.UNDO:
       if (state.index <= 0) return state;
       return {
         ...state,
-        elements: [...state.history[state.index - 1]], // Deep copy
+        elements: [...state.history[state.index - 1]],
         index: state.index - 1,
       };
-
+    case BOARD_ACTIONS.CLEAR_CANVAS:
+      return {
+        ...state,
+        elements: [],
+        history: [[]],
+        index: 0,
+      };
     default:
       return state;
   }
 };
 
+// ... initialBoardState
 const initialBoardState = {
   activeToolItem: TOOL_ITEMS.BRUSH,
   toolActionType: TOOL_ACTION_TYPES.NONE,
@@ -150,6 +154,55 @@ const BoardProvider = ({ children }) => {
     boardReducer,
     initialBoardState
   );
+  const [drawings, setDrawings] = useState([]);
+
+  const fetchDrawings = useCallback(async () => {
+    try {
+      const response = await axios.get("http://localhost:5000/api/drawings");
+      setDrawings(response.data);
+    } catch (error) {
+      console.error("Error fetching drawings:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDrawings();
+  }, [fetchDrawings]);
+
+  // ... all other handler functions
+
+  const handleSaveDrawing = useCallback(async () => {
+    try {
+      const canvas = document.getElementById("canvas");
+      if (!canvas) return;
+      const imageData = canvas.toDataURL("image/png");
+      await axios.post("http://localhost:5000/api/drawings", {
+        drawingData: imageData,
+      });
+      alert("Drawing saved!");
+      fetchDrawings();
+    } catch (error) {
+      alert("Failed to save drawing.");
+    }
+  }, [fetchDrawings]);
+
+  // NEW: Drawing ko delete karne ke liye function
+  const handleDeleteDrawing = useCallback(async (drawingId) => {
+    // User se confirm karein
+    const userConfirmed = window.confirm("Are you sure you want to delete this drawing?");
+    if (!userConfirmed) {
+        return;
+    }
+
+    try {
+        await axios.delete(`http://localhost:5000/api/drawings/${drawingId}`);
+        alert('Drawing deleted successfully!');
+        // UI ko update karne ke liye list ko re-fetch karein
+        fetchDrawings();
+    } catch (error) {
+        alert('Failed to delete drawing.');
+    }
+  }, [fetchDrawings]);
 
   const changeToolItemClick = (tool) => {
     dispatchBoardAction({
@@ -162,10 +215,7 @@ const BoardProvider = ({ children }) => {
 
   const boardMouseDownHandler = (event, toolboxState) => {
     const { clientX, clientY } = event;
-    if (boardState.toolActionType === TOOL_ACTION_TYPES.WRITING) {
-      return;
-    }
-
+    if (boardState.toolActionType === TOOL_ACTION_TYPES.WRITING) return;
     if (boardState.activeToolItem === TOOL_ITEMS.ERASER) {
       dispatchBoardAction({
         type: BOARD_ACTIONS.CHANGE_ACTION_TYPE,
@@ -175,7 +225,6 @@ const BoardProvider = ({ children }) => {
       });
       return;
     }
-
     dispatchBoardAction({
       type: BOARD_ACTIONS.DRAW_DOWN,
       payload: {
@@ -210,9 +259,7 @@ const BoardProvider = ({ children }) => {
   };
 
   const boardMouseUpHandler = () => {
-    if (boardState.toolActionType === TOOL_ACTION_TYPES.WRITING) {
-      return;
-    }
+    if (boardState.toolActionType === TOOL_ACTION_TYPES.WRITING) return;
     dispatchBoardAction({
       type: BOARD_ACTIONS.DRAW_UP,
     });
@@ -254,32 +301,33 @@ const BoardProvider = ({ children }) => {
     anchor.download = "board.png";
     anchor.click();
   }, []);
+  
+  const handleClearCanvas = useCallback(() => {
+    dispatchBoardAction({
+      type: BOARD_ACTIONS.CLEAR_CANVAS,
+    });
+  }, []);
 
-  // NEW: Drawing save karne ke liye function
-  const handleSaveDrawing = useCallback(async () => {
-    try {
-      const canvas = document.getElementById("canvas");
-      if (!canvas) return;
-      const imageData = canvas.toDataURL("image/png");
-
-      const response = await axios.post(
-        "http://localhost:5000/api/drawings",
-        {
-          drawingData: imageData,
-        }
-      );
-      console.log("Drawing saved successfully!", response.data);
-      alert("Drawing saved!");
-    } catch (error) {
-      console.error("Error saving the drawing:", error);
-      alert("Failed to save drawing.");
-    }
+  const handleLoadDrawing = useCallback((imageData) => {
+    const canvas = document.getElementById("canvas");
+    if (!canvas) return;
+    const context = canvas.getContext("2d");
+    const image = new Image();
+    image.src = imageData;
+    image.onload = () => {
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0);
+    };
+    dispatchBoardAction({ type: BOARD_ACTIONS.CLEAR_CANVAS });
+    alert("Drawing loaded onto canvas!");
   }, []);
 
   const boardContextValue = {
+    // ... all other context values
     activeToolItem: boardState.activeToolItem,
     elements: boardState.elements,
     toolActionType: boardState.toolActionType,
+    drawings,
     changeToolItemClick,
     boardMouseDownHandler,
     boardMouseMoveHandler,
@@ -288,7 +336,10 @@ const BoardProvider = ({ children }) => {
     undo: boardUndoHandler,
     redo: boardRedoHandler,
     handleDownload,
-    handleSaveDrawing, // NEW: Naye function ko context me add karein
+    handleSaveDrawing,
+    handleClearCanvas,
+    handleLoadDrawing,
+    handleDeleteDrawing, // NEW: Add the delete function to the context
   };
 
   return (

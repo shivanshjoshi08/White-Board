@@ -88,7 +88,7 @@ Pull requests and suggestions are welcome! For major changes, please open an iss
 
 ## 👨‍💻 Author
 
-**HEMANT KUMAR**  
-[GitHub](https://github.com/HeyaHemant)
+**SHIVANSH JOSHI**  
+[GitHub](https://github.com/shivanshjoshi08)
 
 

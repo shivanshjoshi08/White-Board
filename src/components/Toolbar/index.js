@@ -12,31 +12,34 @@ import {
   FaRedoAlt,
   FaFont,
   FaDownload,
-  FaSave, // 1. FaSave icon ko import karein
+  FaSave,
+  FaTrash, // NEW: Import the trash icon
 } from "react-icons/fa";
 import { LuRectangleHorizontal } from "react-icons/lu";
 import boardContext from "../../store/board-context";
 import { TOOL_ITEMS } from "../../constants";
 
 const Toolbar = () => {
-  // 2. handleSaveDrawing ko context se nikalein
   const {
+    // ...all your other functions from context
     activeToolItem,
     changeToolItemClick,
     undo,
     redo,
     handleDownload,
     handleSaveDrawing,
+    handleClearCanvas, // NEW: Get the clear function from context
   } = useContext(boardContext);
 
   return (
     <div className={classes.container}>
-      {/* ... Aapke baaki ke saare tool items waise hi rahenge ... */}
+      {/* ...all your other tool divs */}
       <div
         className={cx(classes.toolItem, {
           [classes.active]: activeToolItem === TOOL_ITEMS.BRUSH,
         })}
         onClick={() => changeToolItemClick(TOOL_ITEMS.BRUSH)}
+        data-tooltip="Brush"
       >
         <FaPaintBrush />
       </div>
@@ -45,6 +48,7 @@ const Toolbar = () => {
           [classes.active]: activeToolItem === TOOL_ITEMS.LINE,
         })}
         onClick={() => changeToolItemClick(TOOL_ITEMS.LINE)}
+        data-tooltip="Line"
       >
         <FaSlash />
       </div>
@@ -53,6 +57,7 @@ const Toolbar = () => {
           [classes.active]: activeToolItem === TOOL_ITEMS.RECTANGLE,
         })}
         onClick={() => changeToolItemClick(TOOL_ITEMS.RECTANGLE)}
+        data-tooltip="Rectangle"
       >
         <LuRectangleHorizontal />
       </div>
@@ -61,6 +66,7 @@ const Toolbar = () => {
           [classes.active]: activeToolItem === TOOL_ITEMS.CIRCLE,
         })}
         onClick={() => changeToolItemClick(TOOL_ITEMS.CIRCLE)}
+        data-tooltip="Circle"
       >
         <FaRegCircle />
       </div>
@@ -69,6 +75,7 @@ const Toolbar = () => {
           [classes.active]: activeToolItem === TOOL_ITEMS.ARROW,
         })}
         onClick={() => changeToolItemClick(TOOL_ITEMS.ARROW)}
+        data-tooltip="Arrow"
       >
         <FaArrowRight />
       </div>
@@ -77,6 +84,7 @@ const Toolbar = () => {
           [classes.active]: activeToolItem === TOOL_ITEMS.TEXT,
         })}
         onClick={() => changeToolItemClick(TOOL_ITEMS.TEXT)}
+        data-tooltip="Text"
       >
         <FaFont />
       </div>
@@ -85,22 +93,38 @@ const Toolbar = () => {
           [classes.active]: activeToolItem === TOOL_ITEMS.ERASER,
         })}
         onClick={() => changeToolItemClick(TOOL_ITEMS.ERASER)}
+        data-tooltip="Eraser"
       >
         <FaEraser />
       </div>
-      <div className={classes.toolItem} onClick={undo}>
+      <div className={classes.toolItem} onClick={undo} data-tooltip="Undo">
         <FaUndoAlt />
       </div>
-      <div className={classes.toolItem} onClick={redo}>
+      <div className={classes.toolItem} onClick={redo} data-tooltip="Redo">
         <FaRedoAlt />
       </div>
-      <div className={classes.toolItem} onClick={handleDownload}>
+      <div
+        className={classes.toolItem}
+        onClick={handleDownload}
+        data-tooltip="Download"
+      >
         <FaDownload />
       </div>
-      
-      {/* 3. Save button ka div add karein */}
-      <div className={classes.toolItem} onClick={handleSaveDrawing}>
+      <div
+        className={classes.toolItem}
+        onClick={handleSaveDrawing}
+        data-tooltip="Save"
+      >
         <FaSave />
+      </div>
+
+      {/* NEW: Add the Clear button div */}
+      <div
+        className={classes.toolItem}
+        onClick={handleClearCanvas}
+        data-tooltip="Clear All"
+      >
+        <FaTrash />
       </div>
     </div>
   );

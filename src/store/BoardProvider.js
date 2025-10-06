@@ -158,7 +158,7 @@ const BoardProvider = ({ children }) => {
 
   const fetchDrawings = useCallback(async () => {
     try {
-      const response = await axios.get("https://white-board-2kl6.onrender.com");
+      const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/drawings`);
       setDrawings(response.data);
     } catch (error) {
       console.error("Error fetching drawings:", error);
@@ -176,7 +176,7 @@ const BoardProvider = ({ children }) => {
       const canvas = document.getElementById("canvas");
       if (!canvas) return;
       const imageData = canvas.toDataURL("image/png");
-      await axios.post("http://localhost:5000/api/drawings", {
+      await axios.post(`${process.env.REACT_APP_API_URL}/api/drawings`, {
         drawingData: imageData,
       });
       alert("Drawing saved!");
@@ -195,7 +195,7 @@ const BoardProvider = ({ children }) => {
     }
 
     try {
-        await axios.delete(`http://localhost:5000/api/drawings/${drawingId}`);
+        await axios.delete(`${process.env.REACT_APP_API_URL}/api/drawings/${drawingId}`);
         alert('Drawing deleted successfully!');
         // UI ko update karne ke liye list ko re-fetch karein
         fetchDrawings();
